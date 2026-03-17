@@ -1,314 +1,140 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shrimp Control Pro - V6 Sincronizado</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 font-sans pb-10 text-slate-800">
+const URL_API = "https://script.google.com/macros/s/AKfycbx3B4neQ7N6Nb8e6-DFOodN0nDfCXWoJ5bpWdX-vChSYarn6U5Auvh2trQS-wFODSEw/exec";
 
-    <div class="max-w-7xl mx-auto p-4">
-        <header class="bg-slate-900 text-white p-6 rounded-t-xl shadow-lg flex flex-col md:flex-row justify-between items-center border-b-4 border-blue-500">
-            <div class="mb-4 md:mb-0 text-center md:text-left">
-                <h1 class="text-2xl font-black italic text-blue-400 tracking-tight">SHRIMP CONTROL PRO</h1>
-                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Painel Administrativo em Tempo Real</p>
-            </div>
-            
-            <div class="bg-slate-800 p-3 rounded-lg flex flex-wrap gap-3 items-end border border-slate-700 shadow-inner">
-                <div>
-                    <label class="block text-[10px] uppercase text-gray-400 font-black mb-1">Período de:</label>
-                    <input type="date" id="filtroInicio" class="bg-slate-700 text-white text-xs p-2 rounded border border-slate-600 outline-none">
-                </div>
-                <div>
-                    <label class="block text-[10px] uppercase text-gray-400 font-black mb-1">Até:</label>
-                    <input type="date" id="filtroFim" class="bg-slate-700 text-white text-xs p-2 rounded border border-slate-600 outline-none">
-                </div>
-                <button onclick="atualizarInterface()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded text-xs font-black transition-all shadow-lg active:scale-95 uppercase">
-                    🔄 Atualizar Dados
-                </button>
-            </div>
-        </header>
+// Configuração de datas ao carregar
+const hoje = new Date().toISOString().split('T')[0];
+document.getElementById('dataProd').value = hoje;
+document.getElementById('filtroInicio').value = hoje;
+document.getElementById('filtroFim').value = hoje;
 
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 mt-6">
-            
-            <div class="xl:col-span-1 bg-white p-6 rounded-xl shadow-xl border border-gray-200 h-fit">
-                <h2 class="text-sm font-black mb-6 text-slate-700 border-b pb-2 uppercase italic">📥 Lançamento de Lote</h2>
-                <form id="prodForm" class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-black text-gray-500 uppercase italic">Data da Operação</label>
-                        <input type="date" id="dataProd" class="w-full border-2 p-2 rounded-lg focus:border-blue-500 outline-none font-bold" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[10px] font-black text-gray-500 uppercase italic">Lote</label>
-                            <input type="text" id="lote" class="w-full border-2 p-2 rounded-lg focus:border-blue-500 outline-none font-bold uppercase" placeholder="EX: A01" required>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-black text-gray-500 uppercase italic">Turno</label>
-                            <select id="turno" class="w-full border-2 p-2 rounded-lg focus:border-blue-500 outline-none font-bold text-sm" required>
-                                <option value="Dia">☀️ Dia</option>
-                                <option value="Noite">🌙 Noite</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-[10px] font-black text-gray-500 uppercase italic">Calibre</label>
-                        <select id="calibre" class="w-full border-2 p-2 rounded-lg focus:border-blue-500 outline-none font-bold text-sm" required>
-                            <option>11/15</option><option>16/20</option><option>21/25</option><option>26/30</option>
-                            <option>31/35</option><option>36/40</option><option>41/50</option><option>51/60</option>
-                            <option>61/70</option><option>71/90</option><option>91/110</option><option>111/200</option>
-                        </select>
-                    </div>
+// SALVAR DADOS
+document.getElementById('prodForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSalvar');
+    btn.innerText = "⏳ ENVIANDO...";
+    btn.disabled = true;
 
-                    <div class="bg-slate-50 p-4 rounded-xl border-2 border-dashed border-gray-200 space-y-4">
-                        <div>
-                            <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Peso Entrada (kg)</label>
-                            <input type="number" id="pesoIn" step="0.01" class="w-full border p-2 rounded-lg font-black text-lg focus:ring-2 focus:ring-blue-200 outline-none" placeholder="0.00" required>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[10px] font-black text-green-600 uppercase block mb-1 font-black">Filé (kg)</label>
-                                <input type="number" id="pesoOutFile" step="0.01" class="w-full border p-2 rounded-lg font-black text-green-700 outline-none focus:ring-2 focus:ring-green-200" placeholder="0.00" required>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-black text-orange-600 uppercase block mb-1 font-black">Quebrado (kg)</label>
-                                <input type="number" id="pesoOutQuebrado" step="0.01" class="w-full border p-2 rounded-lg font-black text-orange-700 outline-none focus:ring-2 focus:ring-orange-200" placeholder="0.00" required>
-                            </div>
-                        </div>
-                    </div>
+    const pIn = parseFloat(document.getElementById('pesoIn').value) || 0;
+    const pFile = parseFloat(document.getElementById('pesoOutFile').value) || 0;
+    const pBroken = parseFloat(document.getElementById('pesoOutQuebrado').value) || 0;
+    
+    // Cálculo local antes de enviar
+    const totalSaida = pFile + pBroken;
+    const percPerda = pIn > 0 ? (((pIn - totalSaida) / pIn) * 100).toFixed(2) : "0.00";
 
-                    <button type="submit" id="btnSalvar" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black shadow-lg hover:bg-blue-700 transition-all uppercase tracking-wider active:scale-95">
-                        Confirmar e Enviar
-                    </button>
-                </form>
-            </div>
+    const dados = {
+        data: document.getElementById('dataProd').value,
+        lote: document.getElementById('lote').value,
+        turno: document.getElementById('turno').value,
+        calibre: document.getElementById('calibre').value,
+        entrada: pIn,
+        file: pFile,
+        quebrado: pBroken,
+        perda: percPerda // Enviamos o cálculo pronto
+    };
 
-            <div class="xl:col-span-3 space-y-6">
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                    
-                    <div class="bg-white p-5 rounded-2xl shadow-lg border-t-8 border-yellow-400">
-                        <h3 class="text-xs font-black text-yellow-600 uppercase mb-4 italic">☀️ EQUIPE DIA</h3>
-                        <div class="grid grid-cols-2 gap-2 border-b pb-4 mb-4 font-bold text-slate-700">
-                            <div><p class="text-[9px] text-gray-400 uppercase">Entrada</p><p id="dIn">0.00</p></div>
-                            <div><p class="text-[9px] text-gray-400 uppercase">Filé</p><p id="dFile">0.00</p></div>
-                        </div>
-                        <div class="mb-4">
-                            <p class="text-[10px] text-gray-400 uppercase font-black">Vol. Quebrado</p>
-                            <p class="text-2xl font-black text-orange-500"><span id="dBrokenKg">0.00</span> kg</p>
-                        </div>
-                        <div class="flex justify-around items-center pt-3 border-t">
-                            <div><p class="text-[10px] font-bold text-red-600 uppercase">Perda %</p><p id="dPerda" class="text-xl font-black text-red-600">0%</p></div>
-                            <div><p class="text-[10px] font-bold text-orange-400 uppercase">Queb. %</p><p id="dQuebradoPerc" class="text-xl font-black text-orange-400">0%</p></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 rounded-2xl shadow-lg border-t-8 border-indigo-900">
-                        <h3 class="text-xs font-black text-indigo-900 uppercase mb-4 italic">🌙 EQUIPE NOITE</h3>
-                        <div class="grid grid-cols-2 gap-2 border-b pb-4 mb-4 font-bold text-slate-700">
-                            <div><p class="text-[9px] text-gray-400 uppercase">Entrada</p><p id="nIn">0.00</p></div>
-                            <div><p class="text-[9px] text-gray-400 uppercase">Filé</p><p id="nFile">0.00</p></div>
-                        </div>
-                        <div class="mb-4 text-center">
-                            <p class="text-[10px] text-gray-400 uppercase font-black">Vol. Quebrado</p>
-                            <p class="text-2xl font-black text-orange-500"><span id="nBrokenKg">0.00</span> kg</p>
-                        </div>
-                        <div class="flex justify-around items-center pt-3 border-t">
-                            <div><p class="text-[10px] font-bold text-red-600 uppercase">Perda %</p><p id="nPerda" class="text-xl font-black text-red-600">0%</p></div>
-                            <div><p class="text-[10px] font-bold text-orange-400 uppercase">Queb. %</p><p id="nQuebradoPerc" class="text-xl font-black text-orange-400">0%</p></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-800 text-white p-5 rounded-2xl shadow-lg border-t-8 border-blue-500">
-                        <h3 class="text-xs font-black text-blue-400 uppercase mb-4 italic">📊 ACUMULADO GERAL</h3>
-                        <div class="grid grid-cols-2 gap-2 border-b border-slate-700 pb-4 mb-4 font-bold">
-                            <div><p class="text-[9px] text-gray-400 uppercase">Entrada Total</p><p id="gIn">0.00</p></div>
-                            <div><p class="text-[9px] text-gray-400 uppercase">Filé Total</p><p id="gFile" class="text-green-400">0.00</p></div>
-                        </div>
-                        <div class="mb-4">
-                            <p class="text-[10px] text-gray-400 uppercase font-black">Volume Quebrado</p>
-                            <p class="text-2xl font-black text-yellow-500"><span id="gBrokenKg">0.00</span> kg</p>
-                        </div>
-                        <div class="flex justify-around items-center pt-3 border-t border-slate-700">
-                            <div><p class="text-[10px] font-bold text-red-400 uppercase tracking-widest">Perda</p><p id="gPerda" class="text-xl font-black text-red-400">0%</p></div>
-                            <div><p class="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Queb. %</p><p id="gQuebradoPerc" class="text-xl font-black text-yellow-400">0%</p></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                    <div class="p-4 bg-gray-50 border-b flex justify-between items-center font-bold text-xs text-gray-500 uppercase tracking-widest">
-                        <span>📋 Registros Sincronizados</span>
-                        <div id="loadingStatus" class="hidden text-blue-600 animate-pulse italic">Acessando Planilha...</div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-left">
-                            <thead class="bg-slate-100 text-[10px] uppercase font-black text-slate-600 border-b">
-                                <tr>
-                                    <th class="px-4 py-4">Data</th>
-                                    <th class="px-4 py-4">Lote</th>
-                                    <th class="px-4 py-4">Equipe</th>
-                                    <th class="px-4 py-4 text-center">Calibre</th>
-                                    <th class="px-4 py-4 text-right">Entrada</th>
-                                    <th class="px-4 py-4 text-right">Filé</th>
-                                    <th class="px-4 py-4 text-right text-orange-600">Quebrado (kg)</th>
-                                    <th class="px-4 py-4 text-center">Perda %</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaCorpo" class="divide-y text-xs font-semibold text-slate-600"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const URL_API = "https://script.google.com/macros/s/AKfycbxx2AJTjWBYbuz_oz5sAVnd4O2YI42xzuUMM-05N9h97UWT6BruY9lZyGLoCc4PvO4G/exec";
-
-        // Setup de Datas Iniciais
-        const hoje = new Date().toISOString().split('T')[0];
+    try {
+        await fetch(URL_API, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) });
+        alert("✅ Registro salvo com sucesso!");
+        this.reset();
         document.getElementById('dataProd').value = hoje;
-        document.getElementById('filtroInicio').value = hoje;
-        document.getElementById('filtroFim').value = hoje;
+        atualizarInterface();
+    } catch (err) {
+        alert("❌ Erro de conexão.");
+    } finally {
+        btn.innerText = "Confirmar e Enviar";
+        btn.disabled = false;
+    }
+});
 
-        // FORMULÁRIO: ENVIO DE DADOS (POST)
-        document.getElementById('prodForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnSalvar');
-            btn.innerText = "⏳ ENVIANDO...";
-            btn.disabled = true;
-
-            const pIn = parseFloat(document.getElementById('pesoIn').value);
-            const pFile = parseFloat(document.getElementById('pesoOutFile').value);
-            const pBroken = parseFloat(document.getElementById('pesoOutQuebrado').value);
-            const totalSaida = pFile + pBroken;
-            const percPerda = (((pIn - totalSaida) / pIn) * 100).toFixed(2);
-
-            const dados = {
-                data: document.getElementById('dataProd').value,
-                lote: document.getElementById('lote').value,
-                turno: document.getElementById('turno').value,
-                calibre: document.getElementById('calibre').value,
-                entrada: pIn,
-                file: pFile,
-                quebrado: pBroken,
-                perda: percPerda
+// BUSCAR E CALCULAR (O segredo da correção está aqui)
+async function atualizarInterface() {
+    const loading = document.getElementById('loadingStatus');
+    if(loading) loading.classList.remove('hidden');
+    
+    const corpo = document.getElementById('tabelaCorpo');
+    const inicio = document.getElementById('filtroInicio').value;
+    const fim = document.getElementById('filtroFim').value;
+    
+    try {
+        const response = await fetch(URL_API + "?t=" + new Date().getTime());
+        const rawData = await response.json();
+        
+        // MAPEAMENTO ROBUSTO: Forçamos a conversão para número e recalculamos a perda no ato da leitura
+        const dadosProcessados = rawData.map(r => {
+            const ent = parseFloat(r[4]) || 0;
+            const fil = parseFloat(r[5]) || 0;
+            const queb = parseFloat(r[6]) || 0;
+            const calcPerda = ent > 0 ? (((ent - (fil + queb)) / ent) * 100).toFixed(2) : "0.00";
+            
+            return {
+                data: r[0], lote: r[1], turno: r[2], calibre: r[3],
+                entrada: ent, file: fil, quebrado: queb, perda: calcPerda
             };
-
-            try {
-                await fetch(URL_API, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(dados)
-                });
-                alert("✅ Registro enviado para o Google Sheets!");
-                this.reset();
-                document.getElementById('dataProd').value = hoje;
-                atualizarInterface();
-            } catch (err) {
-                alert("❌ Erro ao enviar. Tente novamente.");
-            } finally {
-                btn.innerText = "Confirmar e Enviar";
-                btn.disabled = false;
-            }
         });
 
-        // DASHBOARD: BUSCA DE DADOS (GET) COM ANTI-CACHE
-        async function atualizarInterface() {
-            const loading = document.getElementById('loadingStatus');
-            if(loading) loading.classList.remove('hidden');
-            
-            const corpo = document.getElementById('tabelaCorpo');
-            const inicio = document.getElementById('filtroInicio').value;
-            const fim = document.getElementById('filtroFim').value;
-            
-            try {
-                // O parâmetro ?t= evita que o navegador mostre dados antigos salvos no cache
-                const response = await fetch(URL_API + "?t=" + new Date().getTime());
-                if (!response.ok) throw new Error('Servidor não respondeu');
-                
-                const rawData = await response.json();
+        corpo.innerHTML = "";
+        const filtrados = dadosProcessados.filter(d => {
+            const dData = String(d.data).split('T')[0];
+            return dData >= inicio && dData <= fim;
+        });
 
-                const dadosProcessados = rawData.map(r => ({
-                    data: r[0], lote: r[1], turno: r[2], calibre: r[3],
-                    entrada: parseFloat(r[4] || 0), file: parseFloat(r[5] || 0), 
-                    quebrado: parseFloat(r[6] || 0), perda: r[7]
-                }));
+        filtrados.reverse().forEach(reg => {
+            const dataF = String(reg.data).split('T')[0].split('-').reverse().join('/');
+            corpo.innerHTML += `
+                <tr class="hover:bg-blue-50 border-l-4 ${reg.turno === 'Dia' ? 'border-yellow-400' : 'border-indigo-900'}">
+                    <td class="px-4 py-3 font-mono text-[10px] text-gray-400">${dataF}</td>
+                    <td class="px-4 py-3 font-black text-slate-800">${reg.lote}</td>
+                    <td class="px-4 py-3 text-[10px] font-black italic uppercase">${reg.turno}</td>
+                    <td class="px-4 py-3 text-center font-black text-blue-700 italic">${reg.calibre}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold">${reg.entrada.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-green-700 font-bold">${reg.file.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-orange-600 font-black">${reg.quebrado.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-center font-black text-red-600">${reg.perda}%</td>
+                </tr>
+            `;
+        });
 
-                corpo.innerHTML = "";
-                const filtrados = dadosProcessados.filter(d => {
-                    const dData = String(d.data).split('T')[0];
-                    return dData >= inicio && dData <= fim;
-                });
+        renderizarDashboard(filtrados);
 
-                if (filtrados.length === 0) {
-                    corpo.innerHTML = "<tr><td colspan='8' class='p-8 text-center text-gray-400 font-bold'>Sem lançamentos para este período.</td></tr>";
-                }
+    } catch (error) {
+        console.error(error);
+        corpo.innerHTML = "<tr><td colspan='8' class='p-4 text-center text-red-500 font-bold'>ERRO DE SINCRONIZAÇÃO</td></tr>";
+    } finally {
+        if(loading) loading.classList.add('hidden');
+    }
+}
 
-                filtrados.reverse().forEach(reg => {
-                    const dataF = String(reg.data).split('T')[0].split('-').reverse().join('/');
-                    corpo.innerHTML += `
-                        <tr class="hover:bg-blue-50 border-l-4 ${reg.turno === 'Dia' ? 'border-yellow-400' : 'border-indigo-900'}">
-                            <td class="px-4 py-3 font-mono text-[10px] text-gray-400">${dataF}</td>
-                            <td class="px-4 py-3 font-black uppercase text-slate-800">${reg.lote}</td>
-                            <td class="px-4 py-3 text-[10px] font-black italic uppercase">${reg.turno}</td>
-                            <td class="px-4 py-3 text-center font-black text-blue-700 italic">${reg.calibre}</td>
-                            <td class="px-4 py-3 text-right font-mono font-bold">${reg.entrada.toFixed(2)}</td>
-                            <td class="px-4 py-3 text-right font-mono text-green-700 font-bold">${reg.file.toFixed(2)}</td>
-                            <td class="px-4 py-3 text-right font-mono text-orange-600 font-black">${reg.quebrado.toFixed(2)}</td>
-                            <td class="px-4 py-3 text-center font-black text-red-600">${reg.perda}%</td>
-                        </tr>
-                    `;
-                });
+function renderizarDashboard(lista) {
+    const calc = (arr) => {
+        const sum = arr.reduce((acc, c) => {
+            acc.in += c.entrada; acc.file += c.file; acc.broken += c.quebrado; return acc;
+        }, {in:0, file:0, broken:0});
+        
+        const lossKg = sum.in - (sum.file + sum.broken);
+        return {
+            in: sum.in.toFixed(2),
+            file: sum.file.toFixed(2),
+            brokenKg: sum.broken.toFixed(2),
+            pLoss: sum.in > 0 ? ((lossKg/sum.in)*100).toFixed(1) : "0.0",
+            pBroken: sum.in > 0 ? ((sum.broken/sum.in)*100).toFixed(1) : "0.0"
+        };
+    };
 
-                renderizarDashboard(filtrados);
+    const g = calc(lista);
+    const d = calc(lista.filter(x => x.turno === 'Dia'));
+    const n = calc(lista.filter(x => x.turno === 'Noite'));
 
-            } catch (error) {
-                console.error("Erro detalhado:", error);
-                corpo.innerHTML = "<tr><td colspan='8' class='p-4 text-center text-red-500 font-bold uppercase'>⚠️ Erro de Sincronização. Verifique se publicou como 'Qualquer pessoa'.</td></tr>";
-            } finally {
-                if(loading) loading.classList.add('hidden');
-            }
-        }
+    const atualizarCard = (pref, obj) => {
+        document.getElementById(pref + 'In').innerText = obj.in;
+        document.getElementById(pref + 'File').innerText = obj.file;
+        document.getElementById(pref + 'BrokenKg').innerText = obj.brokenKg;
+        document.getElementById(pref + 'Perda').innerText = obj.pLoss + "%";
+        document.getElementById(pref + 'QuebradoPerc').innerText = obj.pBroken + "%";
+    };
 
-        function renderizarDashboard(lista) {
-            const calc = (arr) => {
-                const sum = arr.reduce((acc, c) => {
-                    acc.in += c.entrada; acc.file += c.file; acc.broken += c.quebrado; return acc;
-                }, {in:0, file:0, broken:0});
-                
-                const lossKg = sum.in - (sum.file + sum.broken);
-                return {
-                    in: sum.in.toFixed(2),
-                    file: sum.file.toFixed(2),
-                    brokenKg: sum.broken.toFixed(2),
-                    pLoss: sum.in > 0 ? ((lossKg/sum.in)*100).toFixed(1) : 0,
-                    pBroken: sum.in > 0 ? ((sum.broken/sum.in)*100).toFixed(1) : 0
-                };
-            };
+    atualizarCard('g', g);
+    atualizarCard('d', d);
+    atualizarCard('n', n);
+}
 
-            const g = calc(lista);
-            const d = calc(lista.filter(x => x.turno === 'Dia'));
-            const n = calc(lista.filter(x => x.turno === 'Noite'));
-
-            const atualizarCard = (pref, obj) => {
-                document.getElementById(pref + 'In').innerText = obj.in;
-                document.getElementById(pref + 'File').innerText = obj.file;
-                document.getElementById(pref + 'BrokenKg').innerText = obj.brokenKg;
-                document.getElementById(pref + 'Perda').innerText = obj.pLoss + "%";
-                document.getElementById(pref + 'QuebradoPerc').innerText = obj.pBroken + "%";
-            };
-
-            atualizarCard('g', g);
-            atualizarCard('d', d);
-            atualizarCard('n', n);
-        }
-
-        // Executar ao abrir
-        atualizarInterface();
-    </script>
-</body>
-</html>
+atualizarInterface();
